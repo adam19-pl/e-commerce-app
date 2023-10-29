@@ -44,23 +44,31 @@ class BlackListTokenView(APIView):
 class ProductsList(APIView, CustomPageNumberPagination):
     serializer_class = ProductSerializer
     pagination_class = CustomPageNumberPagination
-    permission_classes = [AllowAny]
+    permission_classes = [AllowAny,]
 
     def get(self, request):
-        import pdb;pdb.set_trace()
+        print(request.user.is_authenticated)
+        print(request.user.id)
         queryset = Product.objects.all()
         results = self.paginate_queryset(queryset, request, view=self)
         serializer = ProductSerializer(results, many=True)
-        return self.get_paginated_response(serializer.data)
-        # return Response(serializer.data)
+        if request.user.is_authenticated:
+            if serializer.data:
+                for product in serializer.data:
+                    if product.get('added_by') == request.user.id:
+                        product['is_owner'] = True
+            return self.get_paginated_response(data=serializer.data, user_role=request.user.role)
+        return self.get_paginated_response(data=serializer.data)
 
     def post(self, request):
-        serializer = ProductSerializer(data=request.data)
-        if serializer.is_valid():
-            product = serializer.save()
-            if product:
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if request.user.is_authenticated and request.user.role == 'Seller':
+            serializer = ProductSerializer(data=request.data)
+            if serializer.is_valid():
+                product = serializer.save()
+                if product:
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"Error": "Nie możesz dodawać produktu nie będąc zalogowanym jako Sprzedawca"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CategoriesList(APIView):
@@ -86,25 +94,33 @@ class ProductDetails(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, pk):
-        queryset = Product.objects.filter(id=pk)
+        queryset = Product.objects.filter(_id=pk)
         serializer = ProductSerializer(queryset, many=True)
         return Response(serializer.data)
 
     def put(self, request, pk, *args, **kwargs):
         try:
-            book_object = Product.objects.get(pk=pk)
+            product = Product.objects.get(pk=pk)
         except Product.DoesNotExist:
-            return Response({"Error": "Book not exist"}, status=status.HTTP_400_BAD_REQUEST)
-        serializer = ProductSerializer(book_object, data=request.data)
-        if request.data['borrowed_by']:
-            try:
-                user = CustomUser.objects.get(email=request.data['borrowed_by'])
-            except CustomUser.DoesNotExist:
-                return Response({"Error": "User not exist"}, status=status.HTTP_400_BAD_REQUEST)
-            request.data['borrowed_by'] = user.email
+            return Response({"Error": "Produkt nie istnieje"}, status=status.HTTP_400_BAD_REQUEST)
+        if not request.user.is_authenticated and request.user.id != product.added_by:
+            return Response({"Error": "Nie możesz edytować produktu nie będąc zalogowanym jako Sprzedawca oraz nie będąc jego właścicielem"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = ProductSerializer(product, data=request.data)
         if serializer.is_valid():
-            if request.data['status'] in (0, 1):
-                book = serializer.save()
-                if book:
-                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+            product = serializer.save()
+            if product:
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk, *args, **kwargs):
+        try:
+            product = Product.objects.get(pk=pk)
+        except Product.DoesNotExist:
+            return Response({"Error": "Produkt nie istnieje"}, status=status.HTTP_400_BAD_REQUEST)
+        if not request.user.is_authenticated and request.user.id != product.added_by:
+            return Response({"Error": "Nie możesz usunąć produktu nie będąc zalogowanym jako Sprzedawca oraz nie będąc jego właścicielem"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        product.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

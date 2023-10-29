@@ -1,5 +1,5 @@
 from rest_framework import serializers
-
+from io import BytesIO
 from e_commerce.models import Product, ProductCategory, CustomUser
 
 
@@ -32,11 +32,25 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ProductSerializer(serializers.ModelSerializer):
+    category_details = serializers.SerializerMethodField('get_category_name')
 
     class Meta:
         model = Product
-        fields = ['_id', 'name', 'description', 'added_by','price', 'category', 'quantity', 'image', 'add_date']
+        fields = ['_id', 'name', 'description', 'added_by','price', 'category', 'category_details', 'quantity', 'image', 'image_thumbnail','add_date']
         added_by = serializers.ReadOnlyField()
+        image_thumbnail = serializers.ReadOnlyField()
+
+
+    def get_category_name(self, obj):
+        return {'id' : obj.category_id, 'name' : obj.category.name}
+
+    def get_image_thumnbail(self, obj):
+        if not obj.image:
+            obj.image = 'images/kabel.jpg'
+        obj.image_thumbnail = obj.image
+        # obj.save()
+
+        return obj.image_thumbnail
 
 
 class ProductDetailsSerializer(serializers.ModelSerializer):

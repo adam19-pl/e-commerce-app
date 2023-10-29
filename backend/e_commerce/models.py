@@ -1,10 +1,13 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
-
+from django_advance_thumbnail import AdvanceThumbnailField
 from .managers import CustomUserManager
 from django.conf import settings
 from django.utils import timezone
+from imagekit.models import ImageSpecField
+from imagekit.processors import ResizeToFill
+from PIL import Image
 # Create your models here.
 
 
@@ -92,7 +95,10 @@ class Product(models.Model):
     price = models.DecimalField(max_digits=7, decimal_places=2, blank=False, null=False)
     category = models.ForeignKey(ProductCategory, on_delete=models.CASCADE, blank=False, null=False)
     quantity = models.IntegerField("Quantity", null=True, blank=True)
-    image = models.ImageField(upload_to='images/', null=True, blank=True, editable=True,)
+    image = models.ImageField(upload_to='images/', null=True, blank=True, editable=True, default='kabel.jpg')
+    image_thumbnail = AdvanceThumbnailField(source_field='image', upload_to='images/thumbnails/', null=True,
+                                               blank=True,
+                                               size=(200, 200))
     # thumbnail =
     # category = models.IntegerField()
     add_date = models.DateTimeField(default=timezone.now, null=False)
@@ -100,15 +106,15 @@ class Product(models.Model):
     # borrowed_by = models.CharField(max_length=256, null=True, blank=True)
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-
-
-        # super(Product, self).save()
-        # image = Image.open(self.photo)
-        # (width, height) = image.size
-        # size = (100, 100)
-        # image = image.resize(size, Image.ANTIALIAS)
-        # image.save(self.photo.path)
+        # self.image_thumbnail = self.image
+        # image_thumbnail = Image.open(self.image_thumbnail)
+        # if image_thumbnail.width > 200:
+        #     output_size = (200,200)
+        #     image_thumbnail.thumbnail(output_size)
+        #     # self.image_thumbnail.save(image_thumbnail.path)
+        #     image_thumbnail.save(self.image_thumbnail.path)
+        #     # self.image_thumbnail.save(image_thumbnail)
+        super(Product, self).save(*args, **kwargs)
 
 class Order(models.Model):
     client = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
