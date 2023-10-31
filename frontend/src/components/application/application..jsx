@@ -4,12 +4,12 @@ import Header from "../header/header";
 
 
 import AuthenticatedContainer from "./authenticatedContainer/authenticatedContainer";
-const Application = ({ dataBooks, userEmail }) => {
+const Application = () => {
 
     return (
         <Wrapper>
             <Header />
-            <AuthenticatedContainer dataBooks={dataBooks} userEmail={userEmail} />
+            <AuthenticatedContainer />
         </Wrapper>
     )
 }

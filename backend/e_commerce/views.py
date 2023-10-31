@@ -46,12 +46,23 @@ class ProductsList(APIView, CustomPageNumberPagination):
     pagination_class = CustomPageNumberPagination
     permission_classes = [AllowAny,]
 
-    def get(self, request):
-        print(request.user.is_authenticated)
-        print(request.user.id)
+    def get(self, request, filter=None, value=None):
         queryset = Product.objects.all()
         results = self.paginate_queryset(queryset, request, view=self)
-        serializer = ProductSerializer(results, many=True)
+        serializer = ProductSerializer(results, many=True, context={'request': request})
+        if request.query_params:
+            filter = request.query_params.get('filter')
+            value = request.query_params.get('value')
+            if filter == 'name':
+                queryset = Product.objects.filter(name=value)
+            elif filter == 'add_date':
+                queryset = Product.objects.filter(add_date=value)
+            elif filter == 'price':
+                queryset = Product.objects.filter(price=value)
+            elif filter == 'category':
+                queryset = Product.objects.filter(category=value)
+            results = self.paginate_queryset(queryset, request, view=self)
+            serializer = ProductSerializer(results, many=True, context={'request': request})
         if request.user.is_authenticated:
             if serializer.data:
                 for product in serializer.data:
@@ -62,6 +73,8 @@ class ProductsList(APIView, CustomPageNumberPagination):
 
     def post(self, request):
         if request.user.is_authenticated and request.user.role == 'Seller':
+            if not request.data.get('added_by'):
+                request.data['added_by'] = request.user.id
             serializer = ProductSerializer(data=request.data)
             if serializer.is_valid():
                 product = serializer.save()

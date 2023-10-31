@@ -11,12 +11,12 @@ const Home = () => {
     const [dataPagination, setDataPagination] = useState('');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [selected, setSelected] = useState('');
+    const [inputValue, setInputValue] = useState('');
     const handleNext = () => {
         axiosInstance.get('products/?p=2').then((res) => {
             setIsAuthenticated(true);
             setProductsList(res.data.results);
             setDataPagination(res.data.links);
-
         }).catch((error) => {
             if (error.response?.status === 401) {
                 console.log(error.response);
@@ -26,12 +26,11 @@ const Home = () => {
     }
 
     const handleFilter = () => {
-        if(selected){
-            axiosInstance.get('products/?sort='+selected).then((res) => {
+        if (selected && inputValue) {
+            axiosInstance.get(`products/?filter=${selected}&value=${inputValue}`).then((res) => {
                 setIsAuthenticated(true);
                 setProductsList(res.data.results);
                 setDataPagination(res.data.links);
-
             }).catch((error) => {
                 if (error.response?.status === 401) {
                     console.log(error.response);
@@ -61,19 +60,20 @@ const Home = () => {
     }
 
     if (!mounted) {
-        axiosInstance.get('products/').then((res) => {
-            setIsAuthenticated(true);
-            setProductsList(res.data.results);
-            setDataPagination(res.data.links);
+        if (!selected && !inputValue) {
+            axiosInstance.get('products/').then((res) => {
+                setIsAuthenticated(true);
+                setProductsList(res.data.results);
+                setDataPagination(res.data.links);
 
-        }).catch((error) => {
-            if (error.response?.status === 401) {
+            }).catch((error) => {
+                if (error.response?.status === 401) {
+                    console.log(error.response);
+                }
                 console.log(error.response);
-            }
-            console.log(error.response);
-        });
+            });
+        }
     }
-
     useEffect(() => {
         setMounted(true)
     }, [])
@@ -82,7 +82,7 @@ const Home = () => {
             <div>
                 <h2>Produkty</h2>
             </div>
-            {productsList.length === 0 ? <h3>Aktualnie nie posiadamy żadnej ksiązki w naszej bibliotece</h3> :
+            {productsList && (
                 <Table responsive>
                     <thead>
                         <tr>
@@ -92,18 +92,18 @@ const Home = () => {
                             <th>
                                 Nazwa
                             </th>
-                            <th>
+                            {/* <th>
                                 Opis
                             </th>
                             <th>
                                 Data dodania
-                            </th>
+                            </th> */}
                             <th>
                                 Kategoria
                             </th>
-                            <th>
+                            {/* <th>
                                 Ilość
-                            </th>
+                            </th> */}
                             <th>
                                 Cena
                             </th>
@@ -114,46 +114,45 @@ const Home = () => {
                         {productsList.map(product =>
 
                             <tr key={product.id}>
-                                <td><img src={`http://localhost:8000${product.image_thumbnail}`}/></td>
+                                <td><img src={`http://localhost:8000${product.image_thumbnail}`} /></td>
                                 <td>{product.name}</td>
-                                <td>{product.description}</td>
-                                <td>{Moment(product.add_date).format('DD-MM-YYYY')}</td>
+                                {/* <td>{product.description}</td> */}
+                                {/* <td>{Moment(product.add_date).format('DD-MM-YYYY')}</td> */}
                                 <td>{product.category_details.name}</td>
-                                <td>{product.quantity}</td>
+                                {/* <td>{product.quantity}</td> */}
                                 <td>{product.price}</td>
-                                {product.is_owner ? <td>Modyfikuj</td> : productsList.role ? <td>Kup</td> : <td></td>}
                                 <td>
-                                    <Link to="/detail" state={{ from: product }}>Szczegóły</Link>
-                                    
-                                {product.is_owner ? <><Link to="/edit" state={{ from: product }}>Edytuj</Link>
-                                    <Link to="/add" state={{ from: product }}>Dodaj</Link>
-                                    <Link to="/delete" state={{ from: product }}>Usuń</Link>
-                                    </> : <></>}
+                                    <Link to="/details" state={{ from: product }}>Szczegóły</Link>
+                                    {product.is_owner ? <><Link to="/edit" state={{ from: product }}>Edytuj</Link>
+                                        <Link to="/add" productsList={productsList} state={{ from: product }}>Dodaj</Link>
+                                        <Link to="/delete" state={{ from: product }}>Usuń</Link>
+                                    </> : productsList.role ? <td>Kup</td> : <></>}
                                 </td>
                             </tr>)}
                     </tbody>
                     <div>
-                    <form>
-                        <button onClick={handleFilter} className="login-button">Filtruj</button>
-                        <select value={selected} onChange={e => {
-                            setSelected(e.target.value);
-                        }}>
-                            {options.map(option => (
-                                <option key={option.value} value={option.value}>
-                                    {option.text}
-                                </option>
-                            ))}
-                        </select>
-                    </form>
+                        <form>
+                            <button onClick={handleFilter} className="login-button">Filtruj</button>
+                            <select value={selected} onChange={e => {
+                                setSelected(e.target.value);
+                            }}>
+                                {options.map(option => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.text}
+                                    </option>
+                                ))}
+                            </select>
+                            <input value={inputValue} onChange={e => { setInputValue(e.target.value) }}></input>
+                        </form>
                     </div>
                     <div>
                         {dataPagination.previous && (
                             <button onClick={handleBack} className="login-button">Wstecz</button>
-                            )}
+                        )}
                         {dataPagination.next && (
-                        <button onClick={handleNext} className="login-button">Dalej</button>)}
+                            <button onClick={handleNext} className="login-button">Dalej</button>)}
                     </div>
-                </Table>
+                </Table>)
             }
         </Wrapper>
     )
