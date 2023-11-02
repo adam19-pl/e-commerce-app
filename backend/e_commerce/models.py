@@ -11,44 +11,11 @@ from PIL import Image
 # Create your models here.
 
 
-# class CustomUserManager(BaseUserManager):
-#     ROLES = ('Client', 'Seller')
-#
-#     def create_superuser(self, email, nickname, firstname, password, **other_fields):
-#         other_fields.setdefault('is_staff', True)
-#         other_fields.setdefault('is_superuser', True)
-#         other_fields.setdefault('is_active', True)
-#
-#         if not other_fields.get('is_staff'):
-#             raise ValueError('Superuser is_staff must be assigned to True')
-#         if other_fields.get('is_superuser') is not True:
-#             raise ValueError('Superuser is_superuser must be assigned to True')
-#
-#         return self.create_user(email, nickname, firstname, password, **other_fields)
-#
-#     def create_user(self, email, nickname, firstname, password, role, **other_fields):
-#         if not email:
-#             raise ValueError('You must provide an email')
-#         if not password:
-#             raise ValueError('The password should not be empty')
-#         if role not in self.ROLES:
-#             raise ValueError('The user should have a role assigned : Seller or Client')
-#
-#         email = self.normalize_email(email)
-#         user = self.model(email=email, nickname=nickname, firstname=firstname, role=role,
-#                           **other_fields)
-#         user.set_password(password)
-#         user.save()
-#         return user
-#
-#     def user_role(self):
-#         return self.model.role
-
-
 class CustomUser(AbstractUser):
     ROLES = (('Client', 'Client'), ('Seller', 'Seller'))
     email = models.EmailField(max_length=256, unique=True)
     firstname = models.CharField(max_length=256)
+    username = None
     role = models.CharField(choices=ROLES, default=ROLES[0], max_length=128)
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ['firstname', 'role']
@@ -57,29 +24,6 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return self.email
-
-
-# class NewUser(AbstractUser):
-#     ROLES = (('Client', 'Client'), ('Seller', 'Seller'))
-#     # id = models.AutoField(primary_key=True)
-#     user = models.OneToOneField(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-#     email = models.EmailField(max_length=256, unique=True)
-#     username = models.CharField(max_length=256)
-#     firstname = models.CharField(max_length=256)
-#     role = models.CharField(choices=ROLES, default=ROLES[0], max_length=128)
-#     # is_staff = models.BooleanField(default=False)
-#     # is_active = models.BooleanField(default=True)
-#
-#     # objects = CustomUserManager()
-#
-#     USERNAME_FIELD = 'email'
-#     REQUIRED_FIELDS = ['username', 'firstname', 'role']
-#
-#     # def __str__(self):
-#     #     return self.email
-#     #
-#     # def user_role(self):
-#     #     return self.role
 
 
 class ProductCategory(models.Model):
@@ -99,26 +43,20 @@ class Product(models.Model):
     image_thumbnail = AdvanceThumbnailField(source_field='image', upload_to='images/thumbnails/', null=True,
                                                blank=True,
                                                size=(200, 200))
-    # thumbnail =
-    # category = models.IntegerField()
     add_date = models.DateTimeField(default=timezone.now, null=False)
-    # status = models.CharField(choices=STATUS, default=STATUS[0], max_length=128)
-    # borrowed_by = models.CharField(max_length=256, null=True, blank=True)
 
     def save(self, *args, **kwargs):
-        # self.image_thumbnail = self.image
-        # image_thumbnail = Image.open(self.image_thumbnail)
-        # if image_thumbnail.width > 200:
-        #     output_size = (200,200)
-        #     image_thumbnail.thumbnail(output_size)
-        #     # self.image_thumbnail.save(image_thumbnail.path)
-        #     image_thumbnail.save(self.image_thumbnail.path)
-        #     # self.image_thumbnail.save(image_thumbnail)
         super(Product, self).save(*args, **kwargs)
+
+
+def payment_date_with_5_days_extra():
+    return timezone.now() + timezone.timedelta(days=5)
+
 
 class Order(models.Model):
     client = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     delivery_address = models.CharField(blank=True, null=True, max_length=1024)
-    # products_list =
-    payment_date = models.DateTimeField(default=timezone.now, null=False)
+    products_list = models.TextField(null=False)
+    add_date = models.DateTimeField(default=timezone.now, null=False)
+    payment_date = models.DateTimeField(default=payment_date_with_5_days_extra, null=False)
     summary_price = models.DecimalField(max_digits=7, decimal_places=2, blank=False, null=False)

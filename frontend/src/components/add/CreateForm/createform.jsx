@@ -11,6 +11,7 @@ const CreateForm = () => {
     const [mounted, setMounted] = useState(false);
     const [categoriesList, setCategoriesList] = useState('');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [imageFile, setImageFile] = useState('')
     const navigate = useNavigate();
     if (!mounted) {
         axiosInstance.get('categories/').then((res) => {
@@ -28,16 +29,29 @@ const CreateForm = () => {
     useEffect(() => {
         setMounted(true)
     }, [])
-    return (<Formik initialValues={{ name: '', description: '', price: '', category: '' }}
+    const SUPPORTED_FORMATS = ['image/jpg', 'image/png', 'image/jpeg', 'image/gif'];
+    const handleImageChange = (e) => {
+        setImageFile(e.target.files[0])
+      };
+    return (<Formik initialValues={{ name: '', description: '', price: '', category: '', image: File }}
         validationSchema={Yup.object({
             name: Yup.string().min(6, 'The title must be longer than 6 characters').required('This field is required'),
             description: Yup.string().min(6, 'The description field must be longer than 6 characters').required('This field is requred'),
             price: Yup.number().min(1, 'Min value is 1').required('This field is required'),
             category: Yup.string().required("This field is required"),
             quantity: Yup.number().min(1, 'Min value is 1').required('This field is required'),
+            image: Yup.mixed().nullable()
         })}
         onSubmit={(values) => {
-            axiosInstance.post('products/', values).then((res) => {
+            let form_data = new FormData();
+            form_data.append('image', imageFile);
+            form_data.append('name', values.name);
+            form_data.append('description', values.description);
+            form_data.append('price', values.price);
+            form_data.append('category', values.category);
+            form_data.append('quantity', values.quantity);
+
+            axiosInstance.post('products/', form_data).then((res) => {
                 // localStorage.setItem('access_token', res.data.access);
                 // localStorage.setItem('refresh_token', res.data.refresh);
                 // localStorage.setItem('authenticated_email', values.email);
@@ -75,6 +89,12 @@ const CreateForm = () => {
                 type="number"
                 placeholder="ilość"
             />
+            <>
+            <label htmlFor='file'>Zdjęcie</label>
+            <input type="file"
+                   id="image"
+                   accept="image/png, image/jpeg"  onChange={handleImageChange}/>
+            </>
             <MySelect
                 label="Kategoria"
                 name="category"

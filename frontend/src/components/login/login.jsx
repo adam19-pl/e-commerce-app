@@ -5,7 +5,6 @@ import { Wrapper } from "./Login.styles";
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import MyInput from "../../components/fields/input";
-// import MyImage from "../image/image";
 
 const Login = () => {
     const navigate = useNavigate();

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from io import BytesIO
-from e_commerce.models import Product, ProductCategory, CustomUser
+from e_commerce.models import Product, ProductCategory, CustomUser, Order
 
 
 class ChoicesField(serializers.Field):
@@ -65,3 +65,9 @@ class ProductCategoriesSerializer(serializers.ModelSerializer):
         model = ProductCategory
         fields = ['_id', 'name']
         added_by = serializers.ReadOnlyField()
+
+class OrderSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Order
+        ['delivery_address', 'product_list', 'add_date', 'payment_date','summary_price',]

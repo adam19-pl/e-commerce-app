@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from e_commerce.models import Product, ProductCategory, CustomUser
-from e_commerce.serializers import ProductSerializer, ProductDetailsSerializer, ProductCategoriesSerializer, UserSerializer
+from e_commerce.serializers import ProductSerializer, ProductDetailsSerializer, ProductCategoriesSerializer, UserSerializer, OrderSerializer
 from e_commerce.pagination import CustomPageNumberPagination
 import re
 
@@ -54,13 +54,25 @@ class ProductsList(APIView, CustomPageNumberPagination):
             filter = request.query_params.get('filter')
             value = request.query_params.get('value')
             if filter == 'name':
-                queryset = Product.objects.filter(name=value)
+                try:
+                    queryset = Product.objects.filter(name=value)
+                except Product.DoesNotExist:
+                    return Response({"Error": "Produkt nie istnieje"}, status=status.HTTP_400_BAD_REQUEST)
             elif filter == 'add_date':
-                queryset = Product.objects.filter(add_date=value)
-            elif filter == 'price':
-                queryset = Product.objects.filter(price=value)
+                try:
+                    queryset = Product.objects.filter(add_date=value)
+                except Product.DoesNotExist:
+                    return Response({"Error": "Produkt nie istnieje"}, status=status.HTTP_400_BAD_REQUEST)
+            elif filter == 'description':
+                try:
+                    queryset = Product.objects.filter(description=value)
+                except Product.DoesNotExist:
+                    return Response({"Error": "Produkt nie istnieje"}, status=status.HTTP_400_BAD_REQUEST)
             elif filter == 'category':
-                queryset = Product.objects.filter(category=value)
+                try:
+                    queryset = Product.objects.filter(category=value)
+                except Product.DoesNotExist:
+                    return Response({"Error": "Produkt nie istnieje"}, status=status.HTTP_400_BAD_REQUEST)
             results = self.paginate_queryset(queryset, request, view=self)
             serializer = ProductSerializer(results, many=True, context={'request': request})
         if request.user.is_authenticated:
@@ -74,8 +86,9 @@ class ProductsList(APIView, CustomPageNumberPagination):
     def post(self, request):
         if request.user.is_authenticated and request.user.role == 'Seller':
             if not request.data.get('added_by'):
-                request.data['added_by'] = request.user.id
-            serializer = ProductSerializer(data=request.data)
+                updated_data = request.data.copy()
+                updated_data['added_by'] = request.user.id
+            serializer = ProductSerializer(data=updated_data)
             if serializer.is_valid():
                 product = serializer.save()
                 if product:
@@ -137,3 +150,18 @@ class ProductDetails(APIView):
                             status=status.HTTP_400_BAD_REQUEST)
         product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CategoriesList(APIView):
+    serializer_class = OrderSerializer
+    permission_classes = [AllowAny]
+    def post(self, request):
+        if request.user.is_authenticated and request.user.role == 'Client':
+            serializer = OrderSerializer(data=request_data)
+            if serializer.is_valid():
+                order = serializer.save()
+                if order:
+                    ## logika podsumowania zamówienia i wyslania emaila
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"Error": "Nie możesz złożyć zamówienia nie będąc zalogowanym jako Klient"}, status=status.HTTP_400_BAD_REQUEST)

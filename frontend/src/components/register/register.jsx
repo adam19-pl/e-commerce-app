@@ -5,27 +5,31 @@ import { Wrapper } from "./Register.styles";
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import MyInput from "../../components/fields/input";
-// import MyImage from "../image/image";
+import MySelect from "../../components/fields/select";
 
 const Register = () => {
     const navigate = useNavigate();
     const handleLogin = () => {
         navigate('/login')
     }
-
+    const roleOptions = [{
+        id: 'Seller',
+        value: 'Sprzedawca'
+    },
+        {
+        id: 'Client',
+        value:'Klient'
+    }]
     const [backendError, setBackendError] = useState('');
     return (
         <Wrapper>
-            {/* <div>
-                <MyImage src={"/book.png"} alt={"Book Image"} width={180} />
-            </div> */}
             <h2>Zarejestruj się</h2>
-            <Formik initialValues={{ email: '', password: '', firstname: '', nickname: '', }}
+            <Formik initialValues={{ email: '', password: '', firstname: '', role: '', }}
                 validationSchema={Yup.object({
                     email: Yup.string().email('Nieprawidłowy adres email.').required('Proszę, uzupełnij to pole.'),
                     password: Yup.string().min(6, 'Hasło powinno zawierać minimum 6 znaków.').max(64, 'Maksymalna długość hasła to 64 znaki.').required('Proszę, uzupełnij to pole.'),
                     firstname: Yup.string().min(2, 'Twoje imię powinno zawierać minimum 2 znaki.').matches(/^[A-Za-z ]*$/, 'Wprowadź poprawne imię.').required('Proszę, uzupełnij to pole.'),
-                    nickname: Yup.string().min(2, 'Twój nick powinien zawierać minimum 2 znaki.').required('Proszę, uzupełnij to pole.'),
+                    role: Yup.string().required("This field is required"),
                 })}
                 onSubmit={(values) => {
                     axiosInstance.post('register/', values).then((res) => {
@@ -63,12 +67,16 @@ const Register = () => {
                         placeholder="Twoje imię"
                     />
 
-                    <MyInput
-                        label="Nick"
-                        name="nickname"
-                        type="text"
-                        placeholder="Twój nick"
-                    />
+            <MySelect
+                label="Rola"
+                name="role"
+                type="select"
+            >
+                {roleOptions && (roleOptions.map(role => {
+                    console.log(role);
+                    return <option key={role.id} value={role.id}>{role.value}</option>
+                }))}
+            </MySelect>
 
                     <button type="submit">Zarejestruj</button>
                 </Form>

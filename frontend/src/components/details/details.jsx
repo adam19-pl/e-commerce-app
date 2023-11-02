@@ -14,12 +14,13 @@ const Detail = () => {
                 <h3>Szczegóły produktu</h3>
                 <Link to="/">Wróć</Link>
             </div>
+            <div><img src={from.image} width="300"/>
+            </div>
             <h2>Nazwa: {from.name}</h2>
             <h2>Opis: {from.description}</h2>
+            <h2>kategoria: {from.category.name}</h2>
             <h2>Cena : {from.price}</h2>
             <h2>Dodano : {Moment(from.add_date).format('DD-MM-YYYY')}</h2>
-            {/* <h2>Ended: {!dataProject.ended ? '' : Moment(dataProject.ended).format('DD-MM-YYYY')}</h2>
-            <h2>Comments : </h2> */}
         </Wrapper>
     )
 }
